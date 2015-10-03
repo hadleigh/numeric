@@ -8,6 +8,9 @@ from collections import namedtuple
 class Integ51(Integrator):
 
     def set_yinit(self):
+        uservars = namedtuple(
+            'uservars', 'albedo_white chi S0 L albedo_black R albedo_ground')
+        self.uservars = uservars(**self.config['uservars'])
         initvars = namedtuple('initvars', 'whiteconc blackconc')
         self.initvars = initvars(**self.config['initvars'])
         self.yinit = np.array(

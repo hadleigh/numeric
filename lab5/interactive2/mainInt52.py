@@ -1,38 +1,33 @@
-try:
-    from lab5_funs import Integrator
-except ImportError:
-    import os,sys
-    libdir=os.path.abspath('../')
-    sys.path.append(libdir)
-    from lab5_funs import Integrator
-
-from lab5_funs import Integrator
+import numlabs.lab5.lab5_funs
+from importlib import reload
+reload(numlabs.lab5.lab5_funs)
+from numlabs.lab5.lab5_funs import Integrator
+from collections import namedtuple
 
 class Integ52(Integrator):
     """rewrite the init and derivs5 methods to
        work with a single (grey) daisy
     """
+
+    def set_yinit(self):
+        uservars = namedtuple(
+            'uservars', 'albedo_grey chi S0 L  R albedo_ground')
+        self.uservars = uservars(**self.config['uservars'])
+        initvars = namedtuple('initvars', 'greyconc')
+        self.initvars = initvars(**self.config['initvars'])
+        self.yinit = np.array([self.initvars.greyconc])
+        self.nvars = len(self.yinit)
+        return None
+
     def __init__(self,coeffFileName):
-        with open(coeffFileName,'rb') as f:
-            config=yaml.load(f)
-        uservars=namedtuple('uservars','albedo_white chi S0 L albedo_black R albedo_ground')
-        self.uservars=uservars(**config['uservars'])
-        timevars=namedtuple('timevars','dt tstart tend')
-        self.timevars=timevars(**config['timevars'])
-        adaptvars=namedtuple('adaptvars',('dtpassmin dtpassmax dtfailmin dtfailmax s '
-                             'rtol atol maxsteps maxfail'))
-        self.adaptvars=adaptvars(**config['adaptvars'])
-        initvars=namedtuple('initvars','whiteconc blackconc')
-        self.initvars=initvars(**config['initvars'])
-        self.yinit=None
-        self.nvars=None
-        self.rkckConsts=rkck_init()
+        super().__init__(coeffFileName)
+        self.set_yinit()
 
     def derivs5(self,y,t):
         """y[0]=fraction grey daisies
         """
         sigma=5.67e-8  #Stefan Boltzman constant W/m^2/K^4
-        u=self.userVars
+        u=self.uservars
         x = 1.0 - y[0]
         albedo_p = x*u.albedo_ground + y[0]*u.albedo_grey
         Te_4 = u.S0/4.0*u.L*(1.0 - albedo_p)/sigma
@@ -43,17 +38,16 @@ class Integ52(Integrator):
         else:
             beta_g=0.0
 
-        f=np.empty([self.initVars.nVars],'float') #create a 1 x 1 element vector to hold the derivitive
+        f=np.empty([self.nvars],np.float64) #create a 1 x 1 element vector to hold the derivitive
         f[0]= y[0]*(beta_g*x - u.chi)
         return f
 
 
 if __name__=="__main__":
     import numpy as np
-    import scipy as sp
     import matplotlib.pyplot as plt
  
-    theSolver=Integ52('daisy.ini')
+    theSolver=Integ52('daisy2.yaml')
     timeVals,yVals,errorList=theSolver.timeloop5Err()
 
     thefig=plt.figure(1)

@@ -47,9 +47,6 @@ class Integrator:
         with open(coeffFileName, 'rb') as f:
             config = yaml.load(f)
         self.config = config
-        uservars = namedtuple(
-            'uservars', 'albedo_white chi S0 L albedo_black R albedo_ground')
-        self.uservars = uservars(**config['uservars'])
         timevars = namedtuple('timevars', 'dt tstart tend')
         self.timevars = timevars(**config['timevars'])
         adaptvars = namedtuple('adaptvars', ('dtpassmin dtpassmax dtfailmin dtfailmax s '
@@ -129,8 +126,8 @@ class Integrator:
             timeVals.append(oldTime)
             yvals.append(yold)
             errorList.append(yerror)
-            if(num > a.maxSteps):
-                raise Exception('num > maxSteps')
+            if(num > a.maxsteps):
+                raise Exception('num > maxsteps')
             # start out with goodstep false and
             # try different sizes for the next step
             # until one meets the error conditions
@@ -143,8 +140,8 @@ class Integrator:
                 # get the estimated error smaller than
                 # the desired error set by the relative
                 # tolerance
-                if(failSteps > a.maxFail):
-                    raise Exception('failSteps > a.maxFail')
+                if(failSteps > a.maxfail):
+                    raise Exception('failSteps > a.maxfail')
                 #
                 # try a timestep, we may need to reverse this
                 #
@@ -155,19 +152,19 @@ class Integrator:
                 # find the desired tolerance by multiplying the relative
                 # tolerance (RTOL) times the value of y
                 # compare this to the error estimate returnd from rkckODE5
-                # ATOL takes care of the possibility that y~0 at some point
+                # atol takes care of the possibility that y~0 at some point
                 #
                 errtest = 0.
                 for i in range(nvars):
                     errtest = errtest + \
-                        (yerror[i] / (a.ATOL + a.RTOL * np.abs(ynew[i])))**2.0
+                        (yerror[i] / (a.atol + a.rtol * np.abs(ynew[i])))**2.0
                 errtest = np.sqrt(errtest / nvars)
                 #
                 # lab5 equation 4.13, S
                 #
-                dtChange = a.S * (1.0 / errtest)**0.2
-                print("dtChange, errtest, timeStep: ",
-                      dtChange, errtest, timeStep, ynew, yerror)
+                dtchange = a.s * (1.0 / errtest)**0.2
+                print("dtchange, errtest, timeStep: ",
+                      dtchange, errtest, timeStep, ynew, yerror)
                 if (errtest > 1.0):
                     # estimated error is too big so
                     # reduce the timestep and retry
@@ -177,12 +174,12 @@ class Integrator:
                     # dtFailMin~0.1, which means that we don't trust
                     # the estimate to reduce the timestep by more
                     # than a factor of 10 in one loop
-                    if(dtChange > a.dtFailMax):
-                        olddt = a.dtFailMax * olddt
-                    elif (dtChange < a.dtFailMin):
-                        olddt = a.dtFailMin * olddt
+                    if(dtchange > a.dtfailmax):
+                        olddt = a.dtfailmax * olddt
+                    elif (dtchange < a.dtfailmin):
+                        olddt = a.dtfailmin * olddt
                     else:
-                        olddt = dtChange * olddt
+                        olddt = dtchange * olddt
                     if (timeStep + olddt == timeStep):
                         raise Exception('step smaller than machine precision')
                     failSteps = failSteps + 1
@@ -196,17 +193,17 @@ class Integrator:
                 else:
                     # errtest < 1, so we're happy
                     # try to enlarge the timestep by a factor of dtChange > 1
-                    # but keep it smaller than dtPassMax
+                    # but keep it smaller than dtpassmax
                     # try enlarging the timestep bigger for next time
                     # dtpassmin ~ 0.1 and dtpassmax ~ 5
-                    if (abs((1.0 - dtChange)) > a.dtPassMin):
-                        if(dtChange > a.dtPassMax):
-                            dtnew = a.dtPassMax * olddt
+                    if (abs((1.0 - dtchange)) > a.dtpassmin):
+                        if(dtchange > a.dtpassmax):
+                            dtnew = a.dtpassmax * olddt
                         else:
-                            dtnew = dtChange * olddt
+                            dtnew = dtchange * olddt
                     else:
                         # don't bother changing the step size if
-                        # the change is less than dtPassMin
+                        # the change is less than dtpassmin
                         dtnew = olddt
                     goodStep = True
                     #

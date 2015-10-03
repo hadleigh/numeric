@@ -3,7 +3,7 @@ timevars:
   tstart: 0.0
   tend: 50.0
 uservars:
-  albedo_grey: 0.5
+  albedo_grey: 0.8
   chi: 0.3
   S0: 3668.0
   L: 1.3
@@ -16,8 +16,8 @@ adaptvars:
   dtpassmax: 5.0
   dtfailmax: 0.5
   dtfailmin: 0.1
-  S: 0.9
-  RTOL: 1.0e-05
-  ATOL: 1.0e-05
-  maxSteps: 2000.0
-  maxFail: 60.0
+  s: 0.9
+  rtol: 1.0e-05
+  atol: 1.0e-05
+  maxsteps: 2000.0
+  maxfail: 60.0
