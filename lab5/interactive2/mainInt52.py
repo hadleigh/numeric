@@ -13,10 +13,20 @@ class Integ52(Integrator):
        work with a single (grey) daisy
     """
     def __init__(self,coeffFileName):
-        Integrator.__init__(self,coeffFileName)
-        i=self.initVars
-        i.yinit=np.array([i.greyConc])
-        i.nVars=len(i.yinit)
+        with open(coeffFileName,'rb') as f:
+            config=yaml.load(f)
+        uservars=namedtuple('uservars','albedo_white chi S0 L albedo_black R albedo_ground')
+        self.uservars=uservars(**config['uservars'])
+        timevars=namedtuple('timevars','dt tstart tend')
+        self.timevars=timevars(**config['timevars'])
+        adaptvars=namedtuple('adaptvars',('dtpassmin dtpassmax dtfailmin dtfailmax s '
+                             'rtol atol maxsteps maxfail'))
+        self.adaptvars=adaptvars(**config['adaptvars'])
+        initvars=namedtuple('initvars','whiteconc blackconc')
+        self.initvars=initvars(**config['initvars'])
+        self.yinit=None
+        self.nvars=None
+        self.rkckConsts=rkck_init()
 
     def derivs5(self,y,t):
         """y[0]=fraction grey daisies

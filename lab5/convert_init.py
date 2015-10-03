@@ -11,6 +11,8 @@ class MyParser(ConfigParser):
             d[k] = OrderedDict(self._defaults, **d[k])
             d[k].pop('__name__', None)
         return d
+    optionxform = str
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('ini_file',type=str,help='init file name')
