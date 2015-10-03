@@ -1,10 +1,7 @@
-try:
-    from lab5_funs import Integrator
-except ImportError:
-    import os,sys
-    libdir=os.path.abspath('../')
-    sys.path.append(libdir)
-    from lab5_funs import Integrator
+import numlabs.lab5.lab5_funs
+from importlib import reload
+reload(numlabs.lab5.lab5_funs)
+from numlabs.lab5.lab5_funs import Integrator
 
 class Integ51(Integrator):
     def derivs5(self,y,t):
@@ -32,7 +29,6 @@ class Integ51(Integrator):
 
 if __name__=="__main__":
     import numpy as np
-    import scipy as sp
     import matplotlib.pyplot as plt
  
     theSolver=Integ51('fixed.ini')

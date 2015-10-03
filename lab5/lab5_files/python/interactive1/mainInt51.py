@@ -1,10 +1,4 @@
-try:
-    from lab5_funs import Integrator
-except ImportError:
-    import os,sys
-    libdir=os.path.abspath('../')
-    sys.path.append(libdir)
-    from lab5_funs import Integrator
+from numlabs.lab5.lab5_funs import Integrator
 
 class Integ51(Integrator):
     def derivs5(self,y,t):
@@ -28,7 +22,6 @@ class Integ51(Integrator):
         f[0]= y[0]*(beta_w*x - u.chi)
         f[1] = y[1]*(beta_b*x - u.chi)
         return f
-
 
 
 if __name__=="__main__":
