@@ -1,12 +1,26 @@
-try:
-    from lab5_funs import Integrator
-except ImportError:
-    import os,sys
-    libdir=os.path.abspath('../')
-    sys.path.append(libdir)
-    from lab5_funs import Integrator
+import numlabs.lab5.lab5_funs
+from importlib import reload
+reload(numlabs.lab5.lab5_funs)
+from numlabs.lab5.lab5_funs import Integrator
+from collections import namedtuple
+
 
 class Integ53(Integrator):
+
+    def set_yinit(self):
+        uservars = namedtuple(
+            'uservars', 'albedo_white chi S0 L albedo_black R albedo_ground')
+        self.uservars = uservars(**self.config['uservars'])
+        initvars = namedtuple('initvars', 'whiteconc blackconc')
+        self.initvars = initvars(**self.config['initvars'])
+        self.yinit = np.array(
+            [self.initvars.whiteconc, self.initvars.blackconc])
+        self.nvars = len(self.yinit)
+        return None
+
+    def __init__(self, coeffFileName):
+        super().__init__(coeffFileName)
+        self.set_yinit()
 
     def derivs5(self,y,t):
         """y[0]=fraction white daisies
@@ -15,7 +29,7 @@ class Integ53(Integrator):
            albedo_p (set to ground albedo)
         """
         sigma=5.67e-8  #Stefan Boltzman constant W/m^2/K^4
-        u=self.userVars
+        u=self.uservars
         x = 1.0 - y[0] - y[1]
         albedo_p = u.albedo_ground
         Te_4 = u.S0/4.0*u.L*(1.0 - albedo_p)/sigma
@@ -33,7 +47,7 @@ class Integ53(Integrator):
         else:
             beta_w=0.0
 
-        f=np.empty([self.initVars.nVars],'float') #create a 1 x 2 element vector to hold the derivitive
+        f=np.empty([self.nvars],'float') #create a 1 x 2 element vector to hold the derivitive
         f[0]= y[0]*(beta_w*x - u.chi)
         f[1] = y[1]*(beta_b*x - u.chi)
         return f
@@ -42,10 +56,9 @@ class Integ53(Integrator):
 
 if __name__=="__main__":
     import numpy as np
-    import scipy as sp
     import matplotlib.pyplot as plt
  
-    theSolver=Integ53('daisy.ini')
+    theSolver=Integ53('daisy3.yaml')
     timeVals,yVals,errorList=theSolver.timeloop5Err()
 
     thefig=plt.figure(1)
