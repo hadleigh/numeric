@@ -1,19 +1,19 @@
-timeVars:
+timevars:
   dt: 0.1
   tstart: 0.0
   tend: 50.0
-userVars:
+uservars:
   albedo_white: 0.75
   chi: 0.3
-  s0: 1668.0
-  l: 1.1
+  S0: 1668.0
+  L: 1.1
   albedo_black: 0.25
-  r: 0.12
+  R: 0.12
   albedo_ground: 0.5
-initVars:
+initvars:
   whiteconc: 0.2
   blackconc: 0.7
-adaptVars:
+adaptvars:
   dtpassmin: 0.1
   dtpassmax: 5.0
   dtfailmax: 0.5

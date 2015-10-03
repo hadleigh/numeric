@@ -1,31 +1,6 @@
-from __future__ import division
-from __future__ import print_function
-from configparser import ConfigParser
-import sys,os
 import numpy as np
-import pdb
-
-print('here i am II')
-class HoldVals(object):
-
-    def __init__(self,configList):
-        for key,value in configList:
-            #
-            # convert to a float if possible
-            # save the raw value if not
-            #
-            try:
-                self.__setattr__(key,float(value))
-            except ValueError:
-                self.__setattr__(key,value)
-        
-    def __str__(self):
-        out=''
-        for name,value in self.__dict__.iteritems():
-            newLine="%s = %s\n" % (name,value)
-            out=out+newLine
-        return out
-    
+import yaml
+from collections import namedtuple 
 
 def rkck_init():
 ## %
@@ -59,40 +34,34 @@ def rkck_init():
   b[4,4]=253.0/4096.0
   return (a,c1,c2,b)
 
-class MyConfigParser(ConfigParser):
-    optionxform = str
-
-class Integrator(object):
+class Integrator:
+    def set_yinit(self,yinit):
+        if (self.yinit is not None) and (self.nvars is not None):
+            print('overwriting original initial conditions')
+        self.yinit=yinit
+        self.nvars=len(yinit)
+        return None
+                           
     def __init__(self,coeffFileName):
-        print("debug:  Inside Integrator III")
-        config = MyConfigParser()
-        #
-        #preserve case of config variable names
-        #
-        config.optionxform = str 
-        config.read(coeffFileName)
-        self.configVals=config
-        self.userVars=HoldVals(config.items('userVars'))
-        self.timeVars=HoldVals(config.items('timeVars'))
-        self.adaptVars=HoldVals(config.items('adaptVars'))
-        self.initVars=HoldVals(config.items('initVars'))
+        with open(coeffFileName,'rb') as f:
+            config=yaml.load(f)
+        uservars=namedtuple('uservars','albedo_white chi S0 L albedo_black R albedo_ground')
+        self.uservars=uservars(**config['uservars'])
+        timevars=namedtuple('timevars','dt tstart tend')
+        self.timevars=timevars(**config['timevars'])
+        adaptvars=namedtuple('adaptvars',('dtpassmin dtpassmax dtfailmin dtfailmax s '
+                             'rtol atol maxsteps maxfail'))
+        self.adaptvars=adaptvars(**config['adaptvars'])
+        initvars=namedtuple('initvars','whiteconc blackconc')
+        self.initvars=initvars(**config['initvars'])
+        self.yinit=None
+        self.nVArs=None
         self.rkckConsts=rkck_init()
-        #
-        # if either whiteConc or blackConc don't
-        # exist for this problem, leave them to be
-        # set after creation
-        #
-        i=self.initVars
-        try:
-            i.yinit=np.array([i.whiteConc,i.blackConc])
-            i.nVars=len(i.yinit)
-        except AttributeError:
-            i.yinit='tbd'
-            i.nVars='tbd'
+
 
     def __str__(self):
-        out='integrator instance with attributes initVars, timeVars,userVars, ' + \
-             'adaptVars'
+        out='integrator instance with attributes initvars, timevars,uservars, ' + \
+             'adaptvars'
         return out
         
     def derivs5(self,y,t):
@@ -100,7 +69,7 @@ class Integrator(object):
            y[1]=fraction black daisies
         """
         sigma=5.67e-8  #Stefan Boltzman constant W/m^2/K^4
-        u=self.userVars
+        u=self.uservars
         x = 1.0 - y[0] - y[1]        
         albedo_p = x*u.albedo_ground + y[0]*u.albedo_white + y[1]*u.albedo_black    
         Te_4 = u.S0/4.0*u.L*(1.0 - albedo_p)/sigma
@@ -118,7 +87,7 @@ class Integrator(object):
         else:
             beta_w=0.0
 
-        f=np.empty([self.initVars.nVars],'float') #create a 1 x 2 element vector to hold the derivitive
+        f=np.empty([self.initvars.nvars],'float') #create a 1 x 2 element vector to hold the derivitive
         f[0]= y[0]*(beta_w*x - u.chi)
         f[1] = y[1]*(beta_b*x - u.chi)
         return f
@@ -130,10 +99,10 @@ class Integrator(object):
     ## section 3.5
 
         a,c1,c2,b=self.rkckConsts
-        t=self.timeVars
-        i=self.initVars
+        t=self.timevars
+        i=self.initvars
         # set up array to hold k values in lab4 (3.9)
-        derivArray=np.empty([6,i.nVars],'float')
+        derivArray=np.empty([6,self.nvars],'float')
         ynext=np.zeros_like(yold)
         bsum=np.zeros_like(yold)
         estError=np.zeros_like(yold)
@@ -167,23 +136,23 @@ class Integrator(object):
     def timeloop5Err(self):
         """return errors as well as values
         """
-        t=self.timeVars
-        a=self.adaptVars
-        i=self.initVars
-        nVars=i.nVars
-        oldTime=t.tStart
+        t=self.timevars
+        a=self.adaptvars
+        i=self.initvars
+        nvars=self.nvars
+        oldTime=t.tstart
         olddt=t.dt
-        yold=i.yinit
+        yold=self.yinit
         yerror=np.zeros_like(yold)
         num=0
         badsteps=0
         goodsteps=0
         timeVals=[]
-        yVals=[]
+        yvals=[]
         errorList=[]
-        while(oldTime < t.tEnd):
+        while(oldTime < t.tend):
             timeVals.append(oldTime)
-            yVals.append(yold)
+            yvals.append(yold)
             errorList.append(yerror)
             if(num > a.maxSteps):
               raise Exception('num > maxSteps')
@@ -214,9 +183,9 @@ class Integrator(object):
                 # ATOL takes care of the possibility that y~0 at some point
                 #
                 errtest=0.
-                for i in range(nVars):
+                for i in range(nvars):
                   errtest = errtest + (yerror[i]/(a.ATOL + a.RTOL*np.abs(ynew[i])))**2.0
-                errtest = np.sqrt(errtest / nVars)
+                errtest = np.sqrt(errtest / nvars)
                 #
                 # lab5 equation 4.13, S 
                 #
@@ -255,20 +224,20 @@ class Integrator(object):
                     #dtpassmin ~ 0.1 and dtpassmax ~ 5
                     if (abs((1.0 - dtChange)) > a.dtPassMin):
                       if(dtChange > a.dtPassMax):
-                        dtNew = a.dtPassMax * olddt
+                        dtnew = a.dtPassMax * olddt
                       else:
-                        dtNew = dtChange * olddt
+                        dtnew = dtChange * olddt
                     else:
                       #don't bother changing the step size if
                       #the change is less than dtPassMin
-                      dtNew = olddt
+                      dtnew = olddt
                     goodStep = True
                     #
                     # overwrite the old timestep with the new one
                     #
                     oldTime = timeStep
                     yold = ynew
-                    #go back up to top while(timeStep < t.tEnd)
+                    #go back up to top while(timeStep < t.tend)
                     goodsteps=goodsteps + 1
                 #
                 # this is number of times we decreased the step size without
@@ -277,35 +246,35 @@ class Integrator(object):
                 badsteps=badsteps + failSteps
             #special case if we're within one ortwo timesteps of the end
             #otherwise, set dt to the new timestep size
-            if(timeStep + dtNew > t.tEnd):
-                olddt = t.tEnd - timeStep
-            elif(timeStep + 2.0*dtNew > t.tEnd): 
-                olddt = (t.tEnd - timeStep)/2.0
+            if(timeStep + dtnew > t.tend):
+                olddt = t.tend - timeStep
+            elif(timeStep + 2.0*dtnew > t.tend): 
+                olddt = (t.tend - timeStep)/2.0
             else:
-                olddt = dtNew
+                olddt = dtnew
         timeVals=np.array(timeVals).squeeze()
-        yVals=np.array(yVals).squeeze()
+        yvals=np.array(yvals).squeeze()
         errorVals=np.array(errorList).squeeze()
-        return (timeVals,yVals,errorVals)
+        return (timeVals,yvals,errorVals)
 
     def timeloop5fixed(self):
         """fixed time step with
            estimated errors
         """
-        t=self.timeVars
-        i=self.initVars
-        yold=i.yinit
+        t=self.timevars
+        i=self.initvars
+        yold=self.yinit
         yError=np.zeros_like(yold)
-        yVals=[yold]
+        yvals=[yold]
         errorList=[yError]
-        timeSteps=np.arange(t.tStart,t.tEnd,t.dt)
+        timeSteps=np.arange(t.tstart,t.tend,t.dt)
         for theTime in timeSteps[:-1]:
             yold,yError,newTime=self.rkckODE5(yold,theTime,t.dt)
-            yVals.append(yold)
+            yvals.append(yold)
             errorList.append(yError)
-        yVals=np.array(yVals).squeeze()
+        yvals=np.array(yvals).squeeze()
         errorVals=np.array(errorList).squeeze()
-        return (timeSteps,yVals,errorVals)
+        return (timeSteps,yvals,errorVals)
 
 
 
@@ -316,14 +285,14 @@ if __name__=="__main__":
 
     theSolver=Integrator('example1/daisy.ini')
 
-    timeVals,yVals,errList=theSolver.timeloop5Err()
-    whiteDaisies=[frac[0] for frac in yVals]
+    timeVals,yvals,errList=theSolver.timeloop5Err()
+    whiteDaisies=[frac[0] for frac in yvals]
 
     thefig=plt.figure(1)
     thefig.clf()
     theAx=thefig.add_subplot(111)
     points=theAx.plot(timeVals,whiteDaisies,'b+')
-    theLines=theAx.plot(timeVals,yVals)
+    theLines=theAx.plot(timeVals,yvals)
     theLines[1].set_linestyle('--')
     theLines[1].set_color('k')
     theAx.set_title('lab 5 example 1')

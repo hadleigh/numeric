@@ -1,3 +1,6 @@
+import numlabs.lab5.lab5_funs
+from importlib import reload
+reload(numlabs.lab5.lab5_funs)
 from numlabs.lab5.lab5_funs import Integrator
 
 class Integ51(Integrator):
@@ -6,7 +9,7 @@ class Integ51(Integrator):
            y[1]=fraction black daisies
         """
         sigma=5.67e-8  #Stefan Boltzman constant W/m^2/K^4
-        u=self.userVars
+        u=self.uservars
         x = 1.0 - y[0] - y[1]        
         albedo_p = x*u.albedo_ground + y[0]*u.albedo_white + y[1]*u.albedo_black    
         Te_4 = u.S0/4.0*u.L*(1.0 - albedo_p)/sigma
@@ -18,7 +21,7 @@ class Integ51(Integrator):
         beta_b = 0.1 # growth rate for black daisies
         beta_w = 0.7 # growth rate for white daisies
 
-        f=np.empty([self.initVars.nVars],'float') #create a 1 x 2 element vector to hold the derivitive
+        f=np.empty([self.nvars],'float') #create a 1 x 2 element vector to hold the derivitive
         f[0]= y[0]*(beta_w*x - u.chi)
         f[1] = y[1]*(beta_b*x - u.chi)
         return f
@@ -26,41 +29,14 @@ class Integ51(Integrator):
 
 if __name__=="__main__":
     import numpy as np
-    import scipy as sp
     import matplotlib.pyplot as plt
  
-    theSolver=Integ51('daisy.ini')
-    timeVals,yVals,errorList=theSolver.timeloop5Err()
-
-    thefig=plt.figure(1)
-    thefig.clf()
-    theAx=thefig.add_subplot(111)
-    theLines=theAx.plot(timeVals,yVals)
-    theLines[1].set_linestyle('--')
-    theLines[1].set_color('k')
-    theAx.set_title('lab 5 interactive 1')
-    theAx.set_xlabel('time')
-    theAx.set_ylabel('fractional coverage')
-    theAx.legend(theLines,('white daisies','black daisies'),loc='best')
-
-
-    thefig=plt.figure(2)
-    thefig.clf()
-    theAx=thefig.add_subplot(111)
-    theLines=theAx.plot(timeVals,errorList)
-    theLines[1].set_linestyle('--')
-    theLines[1].set_color('k')
-    theLines[0].set_marker('+')
-    theLines[1].set_marker('o')
-    theAx.set_title('lab 5 interactive 1 errors')
-    theAx.set_xlabel('time')
-    theAx.set_ylabel('errors')
-    theAx.legend(theLines,('white errors','black errors'),loc='best')
-    thefig.canvas.draw()
-
+    theSolver=Integ51('fixed.yaml')
+    theSolver.set_yinit(np.array([theSolver.initvars.whiteconc,theSolver.initvars.blackconc]))
+    print('theSolver: debug: ',theSolver.yinit)
     timeVals,yVals,errorList=theSolver.timeloop5fixed()
 
-    thefig=plt.figure(3)
+    thefig=plt.figure(1)
     thefig.clf()
     theAx=thefig.add_subplot(111)
     theLines=theAx.plot(timeVals,yVals)
@@ -73,7 +49,7 @@ if __name__=="__main__":
     theAx.set_ylabel('fractional coverage')
     theAx.legend(theLines,('white daisies','black daisies'),loc='best')
 
-    thefig=plt.figure(4)
+    thefig=plt.figure(2)
     thefig.clf()
     theAx=thefig.add_subplot(111)
     theLines=theAx.plot(timeVals,errorList)
@@ -85,7 +61,6 @@ if __name__=="__main__":
     theAx.set_xlabel('time')
     theAx.set_ylabel('fractional coverage')
     theAx.legend(theLines,('white errors','black errors'),loc='best')
-
 
     plt.show()
     
