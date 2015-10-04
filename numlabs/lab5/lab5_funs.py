@@ -4,18 +4,18 @@ from collections import namedtuple
 
 
 def rkck_init():
-# %
-# % initialize the Cash-Karp coefficients
-# % defined in the tableau in lab 4,
-# % section 3.5
-# %
+    # %
+    # % initialize the Cash-Karp coefficients
+    # % defined in the tableau in lab 4,
+    # % section 3.5
+    # %
     a = np.array([0.2, 0.3, 0.6, 1.0, 0.875])
   # c1 coefficients for the fifth order scheme
     c1 = np.array([37.0 / 378.0, 0.0, 250.0 / 621.0,
-                125.0 / 594.0, 0.0, 512.0 / 1771.0])
+                   125.0 / 594.0, 0.0, 512.0 / 1771.0])
   # c2=c* coefficients for the fourth order schme
     c2 = np.array([2825.0 / 27648.0, 0.0, 18575.0 / 48384.0,
-                  13525.0 / 55296.0, 277.0 / 14336.0, .25])
+                   13525.0 / 55296.0, 277.0 / 14336.0, .25])
     b = np.empty([5, 5], 'float')
   # the following line is ci* - ci in lab4, equation 3.12
     c2 = c1 - c2
@@ -39,10 +39,11 @@ def rkck_init():
 
 
 class Integrator:
-    
+
     def set_yinit(self):
-        raise ValueError('set_init needs to be overridden in the derived class')
-    
+        raise ValueError(
+            'set_init needs to be overridden in the derived class')
+
     def __init__(self, coeffFileName):
         with open(coeffFileName, 'rb') as f:
             config = yaml.load(f)
@@ -50,25 +51,25 @@ class Integrator:
         timevars = namedtuple('timevars', 'dt tstart tend')
         self.timevars = timevars(**config['timevars'])
         adaptvars = namedtuple('adaptvars', ('dtpassmin dtpassmax dtfailmin dtfailmax s '
-                             'rtol atol maxsteps maxfail'))
+                                             'rtol atol maxsteps maxfail'))
         self.adaptvars = adaptvars(**config['adaptvars'])
         self.rkckConsts = rkck_init()
-    
+
     def __str__(self):
         out = 'integrator instance with attributes initvars, timevars,uservars, ' + \
             'adaptvars'
         return out
-    
+
     def derivs5(self, y, t):
         raise ValueError('derivs5 needs to be overrideen in the derived class')
         return None
-    
+
     def rkckODE5(self, yold, timeStep, deltaT):
 
         # initialize the Cash-Karp coefficients
         # defined in the tableau in lab 4,
         # section 3.5
-        
+
         a, c1, c2, b = self.rkckConsts
         t = self.timevars
         i = self.initvars
@@ -82,7 +83,7 @@ class Integrator:
 
         # calculate step
         # c1=c_i in lab 4 (3.9), but c2=c_i - c^*_i
-        
+
         y = yold
         for i in np.arange(5):
             bsum = 0.
@@ -104,7 +105,7 @@ class Integrator:
         timeStep = timeStep + deltaT
 #       pdb.set_trace()
         return (y, estError, timeStep)
-    
+
     def timeloop5Err(self):
         """return errors as well as values
         """
@@ -229,47 +230,49 @@ class Integrator:
         timeVals = np.array(timeVals).squeeze()
         yvals = np.array(yvals).squeeze()
         errorVals = np.array(errorList).squeeze()
+        self.timevals = timeVals
+        self.yvals = yvals
+        self.errorVals = errorVals
         return (timeVals, yvals, errorVals)
-    
+
     def timeloop5fixed(self):
         """fixed time step with
            estimated errors
         """
-        t=self.timevars
-        yold=self.yinit
-        yError=np.zeros_like(yold)
-        yvals=[yold]
-        errorList=[yError]
-        timeSteps=np.arange(t.tstart,t.tend,t.dt)
+        t = self.timevars
+        yold = self.yinit
+        yError = np.zeros_like(yold)
+        yvals = [yold]
+        errorList = [yError]
+        timeSteps = np.arange(t.tstart, t.tend, t.dt)
         for theTime in timeSteps[:-1]:
-            yold,yError,newTime=self.rkckODE5(yold,theTime,t.dt)
+            yold, yError, newTime = self.rkckODE5(yold, theTime, t.dt)
             yvals.append(yold)
             errorList.append(yError)
-        yvals=np.array(yvals).squeeze()
-        errorVals=np.array(errorList).squeeze()
-        return (timeSteps,yvals,errorVals)
+        yvals = np.array(yvals).squeeze()
+        errorVals = np.array(errorList).squeeze()
+        return (timeSteps, yvals, errorVals)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     import numpy as np
     import scipy as sp
     import matplotlib.pyplot as plt
-    
-    theSolver=Integrator('example1/daisy.ini')
-    
-    timeVals,yvals,errList=theSolver.timeloop5Err()
-    whiteDaisies=[frac[0] for frac in yvals]
-    
-    thefig=plt.figure(1)
+
+    theSolver = Integrator('example1/daisy.ini')
+
+    timeVals, yvals, errList = theSolver.timeloop5Err()
+    whiteDaisies = [frac[0] for frac in yvals]
+
+    thefig = plt.figure(1)
     thefig.clf()
-    theAx=thefig.add_subplot(111)
-    points=theAx.plot(timeVals,whiteDaisies,'b+')
-    theLines=theAx.plot(timeVals,yvals)
+    theAx = thefig.add_subplot(111)
+    points = theAx.plot(timeVals, whiteDaisies, 'b+')
+    theLines = theAx.plot(timeVals, yvals)
     theLines[1].set_linestyle('--')
     theLines[1].set_color('k')
     theAx.set_title('lab 5 example 1')
     theAx.set_xlabel('time')
     theAx.set_ylabel('fractional coverage')
-    theAx.legend(theLines,('white daisies','black daisies'),loc='best')
+    theAx.legend(theLines, ('white daisies', 'black daisies'), loc='best')
     plt.show()

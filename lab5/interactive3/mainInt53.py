@@ -3,7 +3,7 @@ from importlib import reload
 reload(numlabs.lab5.lab5_funs)
 from numlabs.lab5.lab5_funs import Integrator
 from collections import namedtuple
-
+import numpy as np
 
 class Integ53(Integrator):
 
