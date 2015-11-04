@@ -1,17 +1,17 @@
 timevars:
   dt: 0.1
   tstart: 0.0
-  tend: 50.0
+  tend: 200.0
 uservars:
   albedo_white: 0.75
   chiw: 0.3
   chib: 0.3
-  chiR: 0.2
-  chiF: 0.2
-  alpha: 0.5
-  beta_R: 0.5
-  beta_F: 0.5
-  epsilon: 0.5
+  chiR: 0.3
+  chiF: 0.15
+  psi: 0.4
+  beta_R: 0.6
+  beta_F: 0.6
+  epsilon: 0.3
   S0: 3668.0
   L: 1.0
   albedo_black: 0.25
@@ -19,10 +19,10 @@ uservars:
   sigma: 5.67e-08
   albedo_ground: 0.5
 initvars:
-  whiteconc: 0.7
-  blackconc: 0.2
-  rabbitconc: 0.4
-  foxconc: 0.4
+  whiteconc: 0.6
+  blackconc: 0.3
+  rabbitconc: 0.2
+  foxconc: 0.2
 adaptvars:
   dtpassmin: 0.1
   dtfailmax: 0.5

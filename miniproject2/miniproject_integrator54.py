@@ -67,11 +67,12 @@ class miniproject_integ54(Integrator):
             beta_w = 0.0
         user = self.uservars
         bare = 1.0 - y[0] - y[1]
+        coverage = 1 - bare
         # create a 1 x 4 element vector to hold the derivitive
         f = np.empty_like(y)
-        f[0] = y[0] * (beta_w * bare - user.chiw - user.alpha * y[2])
-        f[1] = y[1] * (beta_b * bare - user.chib - user.alpha * y[2])
-        f[2] = y[2] * (user.beta_R * (1-bare) - user.chiR - user.epsilon * y[3])
-        f[3] = y[3] * ((user.beta_F * y[3]) - user.chiF)
+        f[0] = y[0] * ((beta_w * bare) - user.chiw - (user.psi * y[2]))
+        f[1] = y[1] * ((beta_b * bare) - user.chib - (user.psi * y[2]))
+        f[2] = y[2] * ((user.beta_R * coverage) - user.chiR - (user.epsilon * y[3]))
+        f[3] = y[3] * ((user.beta_F * y[2]) - user.chiF)
                       
         return f
